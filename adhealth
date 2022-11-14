@@ -1,0 +1,56 @@
+$TestCSVFile = "C:\Temp\OrpDCs.TXT"
+Remove-item $TestCSVFile -ErrorAction SilentlyContinue
+
+$ThisString="Domain Controller Name, Active Directory Forest, Final Status"
+Add-Content "$TestCSVFile" $ThisString
+$CurForestName = "TechGenix.com"
+
+$TotNo=0
+$TestStatus=""
+$TestText=""
+$SumVal=""
+$Config = (Get-ADRootDSE).configurationNamingContext
+$Servers = Get-ADObject -Filter {ObjectClass -eq "Server"} -SearchBase "CN=Sites,$Config" -SearchScope Subtree
+foreach ($Server in $Servers)
+{
+$Ntdsa = Get-ADObject -Filter {ObjectClass -eq "nTDSDSA"} -SearchBase "$(($Server).DistinguishedName)" -SearchScope Subtree
+if ($Ntdsa)
+{
+}
+else
+{
+$ThisServer=$Server.DistinguishedName
+$TotNo++
+$Thisstr='"‘+$ThisServer+'"‘+","+$CurForestName+",Not Ok – This Server does not have NTDS Object"
+Add-Content "$TestCSVFile" $ThisStr
+}
+}
+IF ($Error.count -eq 0)
+{
+}
+else
+{
+$ErrorOrNot="Yes"
+}
+IF ($ErrorOrNot -eq "Yes")
+{
+$TestText = "Error."
+$SumVal = ""
+$TestStatus="Error executing AD Test."
+}
+else
+{
+IF ($TotNo -eq 0)
+{
+$TestText = "No Domain Controllers Found that do not have an NTDS Object."
+$TestStatus="Passed"
+$SumVal=""
+}
+else
+{
+$SumVal = $TotNo
+$TestStatus="High"
+$TestText = "A few Domain Controllers Missing NTDS Object"
+}
+}
+$STR = $ADTestName +","+$TestStartTime+","+$TestStatus+","+$SumVal +","+$TestText
